@@ -428,7 +428,7 @@
                     <h1>🏠 DomPay</h1>
                     <div class="subtitle">Идоракунии шартномаҳои хариди хона ва пардохтҳо</div>
                 </div>
-                <div id="syncStatus" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 8px; font-size: 0.85rem;">
+                <div class="sync-status" id="syncStatus" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255,255,255,0.2); border-radius: 8px; font-size: 0.85rem;">
                     <span id="syncIcon">🔄</span>
                     <span id="syncText">Боргирӣ...</span>
                 </div>
@@ -688,36 +688,53 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        // ⚠️ ГУЗОШТАНИ URL ВА KEY
+        // ⚠️ ДИГАР КУНЕД: URL ва KEY-и Supabase-и худро гузоред!
         const SUPABASE_URL = 'https://csqdvbiiuhagegtagztg.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable__TSYV3L6XYK5VQ2c_4Xepg_4xedbvef';
         
         let supabaseClient = null;
         
+        // Initialize Supabase
         function initSupabase() {
-            if (SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY_HERE') {
-                updateSyncStatus('offline', 'URL ва KEY лозим');
-                console.warn('⚠️ Гузоштани SUPABASE_URL ва SUPABASE_ANON_KEY дар код лозим!');
+            try {
+                if (SUPABASE_URL === 'YOUR_SUPABASE_URL_HERE' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY_HERE') {
+                    updateSyncStatus('offline', 'URL ва KEY гузоштан лозим');
+                    console.warn('⚠️ Гузоштани SUPABASE_URL ва SUPABASE_ANON_KEY дар код лозим!');
+                    return false;
+                }
+                
+                if (typeof window.supabase === 'undefined') {
+                    updateSyncStatus('offline', 'SDK бор нашуд');
+                    return false;
+                }
+                
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                updateSyncStatus('online', 'Онлайн');
+                return true;
+            } catch (error) {
+                console.error('Хатогӣ:', error);
+                updateSyncStatus('offline', 'Хатогӣ');
                 return false;
             }
-            if (typeof window.supabase === 'undefined') {
-                updateSyncStatus('offline', 'SDK бор нашуд');
-                return false;
-            }
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            updateSyncStatus('online', 'Онлайн');
-            return true;
         }
         
+        // Update sync status
         function updateSyncStatus(status, text) {
             const icon = document.getElementById('syncIcon');
             const textEl = document.getElementById('syncText');
             if (!icon || !textEl) return;
-            icon.textContent = status === 'online' ? '✅' : (status === 'offline' ? '❌' : '🔄');
+            
+            if (status === 'online') {
+                icon.textContent = '✅';
+            } else if (status === 'offline') {
+                icon.textContent = '❌';
+            } else {
+                icon.textContent = '🔄';
+            }
             textEl.textContent = text;
         }
         
-        // IndexedDB variables
+        // IndexedDB-ро бо Supabase иваз мекунем
         let db;
         const DB_NAME = 'DomPayDB';
         const DB_VERSION = 1;
@@ -727,16 +744,19 @@
         let currentContract = null;
         let tempPayments = []; // Барои пардохтҳое, ки то ҳол сабт нашудаанд
 
-        // Initialize DB
+        // Initialize DB (ҳозир Supabase)
         function initDB() {
             return Promise.resolve(initSupabase());
         }
 
-        // Get all contracts
+        // Get all contracts (Supabase)
         async function getAllContracts() {
             if (!supabaseClient) return [];
             try {
-                const { data, error } = await supabaseClient.from('contracts').select('*').order('created_at', { ascending: false });
+                const { data, error } = await supabaseClient
+                    .from('contracts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
                 if (error) throw error;
                 return data || [];
             } catch (error) {
@@ -745,11 +765,15 @@
             }
         }
 
-        // Get contract by ID
+        // Get contract by ID (Supabase)
         async function getContractById(id) {
             if (!supabaseClient) return null;
             try {
-                const { data, error } = await supabaseClient.from('contracts').select('*').eq('id', id).single();
+                const { data, error } = await supabaseClient
+                    .from('contracts')
+                    .select('*')
+                    .eq('id', id)
+                    .single();
                 if (error) throw error;
                 return data;
             } catch (error) {
@@ -758,11 +782,15 @@
             }
         }
 
-        // Save contract
+        // Save contract (Supabase)
         async function saveContractToDB(contract) {
             if (!supabaseClient) throw new Error('Supabase пайваст нашудааст');
             try {
-                const { data, error } = await supabaseClient.from('contracts').insert([contract]).select().single();
+                const { data, error } = await supabaseClient
+                    .from('contracts')
+                    .insert([contract])
+                    .select()
+                    .single();
                 if (error) throw error;
                 return data;
             } catch (error) {
@@ -770,11 +798,16 @@
             }
         }
 
-        // Update contract
+        // Update contract (Supabase)
         async function updateContractInDB(contract) {
             if (!supabaseClient) throw new Error('Supabase пайваст нашудааст');
             try {
-                const { data, error } = await supabaseClient.from('contracts').update(contract).eq('id', contract.id).select().single();
+                const { data, error } = await supabaseClient
+                    .from('contracts')
+                    .update(contract)
+                    .eq('id', contract.id)
+                    .select()
+                    .single();
                 if (error) throw error;
                 return data;
             } catch (error) {
@@ -782,11 +815,14 @@
             }
         }
 
-        // Delete contract
+        // Delete contract (Supabase)
         async function deleteContractFromDB(id) {
             if (!supabaseClient) throw new Error('Supabase пайваст нашудааст');
             try {
-                const { error } = await supabaseClient.from('contracts').delete().eq('id', id);
+                const { error } = await supabaseClient
+                    .from('contracts')
+                    .delete()
+                    .eq('id', id);
                 if (error) throw error;
             } catch (error) {
                 throw error;
@@ -803,12 +839,11 @@
                 contracts.forEach(contract => {
                     const option = document.createElement('option');
                     option.value = contract.id;
-                    option.textContent = `${contract.buyer_name} | ${contract.contract_no} | ${contract.contract_name}`;
+                    option.textContent = `${contract.buyer_name || ''} | ${contract.contract_no || ''} | ${contract.contract_name || ''}`;
                     select.appendChild(option);
                 });
             } catch (error) {
                 console.error('Хатогӣ дар бор кардани рӯйхат:', error);
-                alert('Хатогӣ: ' + error.message);
             }
         }
 
@@ -1199,7 +1234,7 @@
                 clearForm();
             } catch (error) {
                 console.error('Хатогӣ дар сабт:', error);
-                if (error.name === 'ConstraintError') {
+                if (error.message && error.message.includes('duplicate')) {
                     alert('Шартнома бо ин рақам аллакай мавҷуд аст!');
                 } else {
                     alert('Хатогӣ: ' + error.message);
@@ -1252,7 +1287,7 @@
             }
             
             try {
-                await deleteContractFromDB(parseInt(selectedValue));
+                await deleteContractFromDB(selectedValue);
                 alert('Шартнома нест карда шуд!');
                 
                 currentContract = null;
@@ -1436,7 +1471,7 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            if (!confirm('Шумо мутмаин ҳастед? Ин амал ҳамаи маълумоти ҷориро иваз мекунад!')) {
+            if (!confirm('Шумо мутмаин ҳастед? Ин ба маълумоти мавҷуда илова мекунад.')) {
                 event.target.value = '';
                 return;
             }
@@ -1445,18 +1480,10 @@
                 const text = await file.text();
                 const contracts = JSON.parse(text);
                 
-                // Clear existing data
-                const transaction = db.transaction([STORE_NAME], 'readwrite');
-                const objectStore = transaction.objectStore(STORE_NAME);
-                await new Promise((resolve, reject) => {
-                    const request = objectStore.clear();
-                    request.onsuccess = resolve;
-                    request.onerror = () => reject(request.error);
-                });
-                
-                // Add imported data
                 for (const contract of contracts) {
-                    delete contract.id; // Remove old IDs
+                    delete contract.id;
+                    delete contract.created_at;
+                    contract.created_at = new Date().toISOString();
                     await saveContractToDB(contract);
                 }
                 
