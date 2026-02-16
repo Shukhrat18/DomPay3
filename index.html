@@ -907,21 +907,21 @@
             }
             
             try {
-                const contract = await getContractById(parseInt(selectedValue));
+                const contract = await getContractById(selectedValue);
                 if (contract) {
                     currentContract = contract;
                     tempPayments = [];
                     
                     // Fill form
-                    document.getElementById('buyer_name').value = contract.buyer_name || '';
-                    document.getElementById('buyer_phone').value = contract.buyer_phone || '';
-                    document.getElementById('contract_name').value = contract.contract_name || '';
-                    document.getElementById('contract_no').value = contract.contract_no || '';
-                    document.getElementById('contract_date').value = contract.contract_date || '';
-                    document.getElementById('start_date').value = contract.start_date || '';
-                    document.getElementById('house_price').value = contract.house_price || '';
-                    document.getElementById('initial_percent').value = contract.initial_percent || '';
-                    document.getElementById('months_count').value = contract.months_count || '';
+                    document.getElementById('buyerName').value = contract.buyer_name || '';
+                    document.getElementById('buyerPhone').value = contract.buyer_phone || '';
+                    document.getElementById('contractName').value = contract.contract_name || '';
+                    document.getElementById('contractNo').value = contract.contract_no || '';
+                    document.getElementById('contractDate').value = contract.contract_date || '';
+                    document.getElementById('startDate').value = contract.start_date || '';
+                    document.getElementById('housePrice').value = contract.house_price || '';
+                    document.getElementById('initialPercent').value = contract.initial_percent || '';
+                    document.getElementById('monthsCount').value = contract.months_count || '';
                     
                     calculate();
                 }
